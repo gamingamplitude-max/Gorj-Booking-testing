@@ -1,0 +1,1198 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Gorj Booking – Platformă premium de turism montan pentru județul Gorj, România. Descoperă Transalpina, Rânca, Peștera Muierilor și rezervă cazări verificate, cu experiențe 3D și ghizi locali." />
+  <meta name="keywords" content="Gorj, turism, Transalpina, Rânca, Peștera Muierilor, Coloana Infinitului, cazare, booking, rezervari cazare Gorj" />
+  <meta name="author" content="Teodor Becheanu & Popescu Alexandru" />
+  <meta name="theme-color" content="#0a0a0a" />
+  <title>GORJ BOOKING – Luxury Mountain Booking Experience</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏔️</text></svg>" />
+
+  <!-- Self-hosted variable fonts (no external font CDN) -->
+  <link rel="preload" as="font" type="font/woff2" href="fonts/CormorantGaramond-Variable.woff2" crossorigin />
+  <link rel="preload" as="font" type="font/woff2" href="fonts/JosefinSans-Variable.woff2" crossorigin />
+
+  <link rel="stylesheet" href="style.css" />
+
+  <!-- Self-hosted GSAP + ScrollTrigger + Three.js (see files/vendor) -->
+  <script src="vendor/gsap.min.js"></script>
+  <script src="vendor/ScrollTrigger.min.js"></script>
+  <script src="vendor/TextPlugin.min.js"></script>
+  <script src="vendor/three.min.js"></script>
+</head>
+<body>
+
+  <!-- ═══════════════════════════════════════════ NOISE / GRAIN OVERLAY (subtle premium texture) -->
+  <div class="grain-overlay" aria-hidden="true"></div>
+
+  <!-- ═══════════════════════════════════════════ LOADING SCREEN -->
+  <div id="loading-screen">
+    <div class="loader-inner">
+      <div class="loader-crest" aria-hidden="true">
+        <svg viewBox="0 0 120 120" class="loader-crest-svg">
+          <polygon class="crest-peak crest-peak--back" points="10,86 34,40 52,66 60,52 78,80 110,86" />
+          <polygon class="crest-peak crest-peak--front" points="4,90 28,52 46,76 62,48 84,84 116,90" />
+          <circle class="crest-sun" cx="60" cy="34" r="9" />
+        </svg>
+      </div>
+      <div class="loader-logo">
+        <span class="loader-g">G</span><span class="loader-orj">ORJ</span>
+      </div>
+      <div class="loader-subtitle">BOOKING</div>
+      <div class="loader-bar-wrap">
+        <div class="loader-bar"></div>
+      </div>
+      <div class="loader-percent">0%</div>
+    </div>
+  </div>
+
+  <!-- AUTH MODAL (shown on demand when an action needs an account) -->
+  <div id="auth-modal" class="auth-modal hidden" aria-hidden="true">
+    <div class="auth-modal-overlay"></div>
+    <div class="auth-modal-content tilt-3d" data-tilt-max="4">
+      <button type="button" class="auth-modal-close" id="auth-modal-close" aria-label="Închide">✕</button>
+      <span class="section-tag">CONT GORJ BOOKING</span>
+      <h2>Conectează-te sau creează un cont</h2>
+      <p class="auth-modal-sub">Salvezi rezervările, primești confirmări instant și îți păstrezi ghidul local preferat pentru vizita următoare.</p>
+      <div class="account-tabs modal-tabs">
+        <button type="button" class="account-tab active" data-tab="modal-login">Autentificare</button>
+        <button type="button" class="account-tab" data-tab="modal-register">Înregistrare</button>
+      </div>
+
+      <div class="modal-auth-forms">
+        <form id="modal-login-form" class="auth-form" novalidate>
+          <div class="form-group">
+            <label for="modal-login-email">Email</label>
+            <input type="email" id="modal-login-email" name="modalLoginEmail" required autocomplete="email" />
+          </div>
+          <div class="form-group">
+            <label for="modal-login-password">Parolă</label>
+            <input type="password" id="modal-login-password" name="modalLoginPassword" required autocomplete="current-password" />
+          </div>
+          <button type="submit" class="btn-submit btn-account-submit"><span class="btn-submit-text">Conectare</span><span class="btn-submit-icon">→</span></button>
+        </form>
+
+        <form id="modal-register-form" class="auth-form hidden" novalidate>
+          <div class="form-group">
+            <label for="modal-register-name">Nume complet</label>
+            <input type="text" id="modal-register-name" name="modalRegisterName" required autocomplete="name" />
+          </div>
+          <div class="form-group">
+            <label for="modal-register-email">Email</label>
+            <input type="email" id="modal-register-email" name="modalRegisterEmail" required autocomplete="email" />
+          </div>
+          <div class="form-group">
+            <label for="modal-register-password">Parolă</label>
+            <input type="password" id="modal-register-password" name="modalRegisterPassword" required autocomplete="new-password" />
+          </div>
+          <div class="form-group">
+            <label for="modal-register-password-confirm">Confirmă parola</label>
+            <input type="password" id="modal-register-password-confirm" name="modalRegisterPasswordConfirm" required autocomplete="new-password" />
+          </div>
+          <button type="submit" class="btn-submit btn-account-submit"><span class="btn-submit-text">Creează cont</span><span class="btn-submit-icon">→</span></button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ CUSTOM CURSOR -->
+  <div id="cursor"></div>
+  <div id="cursor-follower"></div>
+
+  <!-- ═══════════════════════════════════════════ NAVBAR -->
+  <nav id="navbar">
+    <div class="nav-logo">
+      <span class="logo-text">GORJ <span class="logo-accent">BOOKING</span></span>
+    </div>
+    <div class="nav-menu" id="nav-menu">
+      <a href="#destinations" class="nav-link">Destinații</a>
+      <a href="#accommodations" class="nav-link">Cazări</a>
+      <a href="#testimonials" class="nav-link">Recenzii</a>
+      <a href="#gallery" class="nav-link">Galerie</a>
+      <a href="#about" class="nav-link">Despre</a>
+      <a href="#faq" class="nav-link">Întrebări</a>
+      <a href="#booking" class="nav-link nav-cta">Rezervă</a>
+    </div>
+    <div class="nav-account">
+      <button id="account-button" type="button" class="btn-account-nav">Cont</button>
+    </div>
+    <div class="nav-hamburger" id="hamburger">
+      <span></span><span></span><span></span>
+    </div>
+  </nav>
+
+  <div class="account-widget-wrapper hidden" id="account-widget-wrapper">
+    <div class="account-widget">
+      <div class="account-panel hidden" id="account-panel">
+        <div class="account-header">
+          <div>
+            <span class="account-welcome">Bun venit,</span>
+            <strong id="account-name"></strong>
+          </div>
+          <button type="button" class="btn-ghost" id="logout-btn">Deconectare</button>
+        </div>
+        <div class="account-stats">
+          <span id="account-reservation-count">0</span>
+          <span>Rezervări salvate</span>
+        </div>
+        <div class="account-reservations">
+          <h4>Rezervările tale</h4>
+          <div id="reservation-list" class="reservation-list"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ HERO SECTION -->
+  <section id="hero">
+    <div class="hero-bg">
+      <img src="images/hero-dusk.jpg" alt="Apus peste stațiunea Rânca, Munții Parâng" class="hero-bg-img" id="hero-bg-img" />
+      <div class="hero-overlay"></div>
+    </div>
+
+    <!-- Real-time 3D terrain scene (Three.js) — layered gold ridgelines with parallax -->
+    <canvas id="hero-3d-canvas" class="hero-3d-canvas" aria-hidden="true"></canvas>
+    <canvas id="hero-ripple-canvas" class="hero-ripple-canvas" aria-hidden="true"></canvas>
+
+    <div class="hero-content">
+      <div class="hero-eyebrow" data-reveal>JUDEȚUL GORJ · ROMÂNIA</div>
+      <h1 class="hero-title" data-reveal>
+        <span class="line">Discover</span>
+        <span class="line italic">Gorj</span>
+      </h1>
+      <p class="hero-sub" data-reveal>Experiență de rezervare montană, în relief</p>
+      <div class="hero-divider" data-reveal></div>
+      <div class="hero-cta" data-reveal>
+        <a href="#destinations" class="btn-primary"><span>Explorează</span></a>
+        <a href="#booking" class="btn-ghost"><span>Rezervă Acum</span></a>
+      </div>
+    </div>
+
+    <!-- NEW: Booking search widget — the core "booking site" entry point -->
+    <div class="hero-search-wrap" data-reveal>
+      <form class="hero-search tilt-3d" id="hero-search-form" data-tilt-max="3" data-tilt-glare="false">
+        <div class="hero-search-field">
+          <label for="search-destination">Destinație</label>
+          <select id="search-destination" name="destination">
+            <option value="">Oriunde în Gorj</option>
+            <option value="Târgu Jiu">Târgu Jiu</option>
+            <option value="Rânca">Rânca</option>
+            <option value="Transalpina">Transalpina</option>
+            <option value="Tismana">Tismana</option>
+            <option value="Baia de Fier">Baia de Fier</option>
+          </select>
+        </div>
+        <div class="hero-search-divider" aria-hidden="true"></div>
+        <div class="hero-search-field">
+          <label for="search-checkin">Check-in</label>
+          <input type="date" id="search-checkin" name="checkin" />
+        </div>
+        <div class="hero-search-divider" aria-hidden="true"></div>
+        <div class="hero-search-field">
+          <label for="search-checkout">Check-out</label>
+          <input type="date" id="search-checkout" name="checkout" />
+        </div>
+        <div class="hero-search-divider" aria-hidden="true"></div>
+        <div class="hero-search-field hero-search-field--guests">
+          <label for="search-guests">Persoane</label>
+          <select id="search-guests" name="guests">
+            <option value="1">1 persoană</option>
+            <option value="2" selected>2 persoane</option>
+            <option value="3">3 persoane</option>
+            <option value="4">4 persoane</option>
+            <option value="5+">5+ persoane</option>
+          </select>
+        </div>
+        <button type="submit" class="hero-search-submit">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <span>Caută cazări</span>
+        </button>
+      </form>
+    </div>
+
+    <div class="hero-scroll-hint">
+      <div class="scroll-line"></div>
+      <span>SCROLL</span>
+    </div>
+
+    <div class="hero-stats">
+      <div class="stat-item tilt-3d" data-tilt-max="8">
+        <span class="stat-num" data-count="47">0</span>
+        <span class="stat-label">Trasee</span>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat-item tilt-3d" data-tilt-max="8">
+        <span class="stat-num" data-count="120">0</span>
+        <span class="stat-label">Cazări</span>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat-item tilt-3d" data-tilt-max="8">
+        <span class="stat-num" data-count="9">0</span>
+        <span class="stat-label">Premii</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════ MARQUEE STRIP -->
+  <div class="marquee-strip">
+    <div class="marquee-track">
+      <span>TRANSALPINA</span><span class="dot">◆</span>
+      <span>RÂNCA</span><span class="dot">◆</span>
+      <span>COLOANA INFINITULUI</span><span class="dot">◆</span>
+      <span>PEȘTERA MUIERILOR</span><span class="dot">◆</span>
+      <span>CHEILE SOHODOLULUI</span><span class="dot">◆</span>
+      <span>MĂNĂSTIREA TISMANA</span><span class="dot">◆</span>
+      <span>TRANSALPINA</span><span class="dot">◆</span>
+      <span>RÂNCA</span><span class="dot">◆</span>
+      <span>COLOANA INFINITULUI</span><span class="dot">◆</span>
+      <span>PEȘTERA MUIERILOR</span><span class="dot">◆</span>
+      <span>CHEILE SOHODOLULUI</span><span class="dot">◆</span>
+      <span>MĂNĂSTIREA TISMANA</span><span class="dot">◆</span>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ DESTINATIONS -->
+  <section id="destinations">
+    <span id="ghid-locatii" class="anchor-offset" aria-hidden="true"></span>
+    <span id="sectiune-locatii-gorj" class="anchor-offset" aria-hidden="true"></span>
+    <div class="section-header" data-reveal>
+      <span class="section-tag">DESTINAȚII GORJ</span>
+      <h2 class="section-title">Toate locurile importante din <em>Gorj</em></h2>
+      <p class="section-desc">Descoperă cele mai importante atracții din județul Gorj, plus opțiunea de ghid local care crește valoarea pachetului. Fiecare card se înclină în 3D — mișcă mouse-ul peste el.</p>
+    </div>
+
+    <div class="destinations-grid">
+
+      <!-- Card 1 – Transalpina -->
+      <div class="dest-card dest-card--large tilt-3d" data-tilt-max="9" data-dest="transalpina">
+        <div class="dest-card-img-wrap" data-tilt-layer="1">
+          <img src="images/transalpina.jpg" alt="Transalpina" class="dest-card-img" loading="lazy" />
+        </div>
+        <div class="dest-card-overlay"></div>
+        <div class="tilt-glare"></div>
+        <div class="dest-card-content" data-tilt-layer="2">
+          <span class="dest-tag">Drum Alpin</span>
+          <h3 class="dest-name">Transalpina</h3>
+          <p class="dest-desc">Drumul regelui, un traseu spectaculos peste culmile Parângului, cu priveliști alpine ce merită un ghid local.</p>
+          <div class="dest-meta">
+            <span>2.145m altitudine</span>
+            <span class="meta-sep">·</span>
+            <span>148 km</span>
+            <span class="meta-sep">·</span>
+            <span class="dest-price">de la €65</span>
+          </div>
+          <div class="dest-card-actions">
+            <button type="button" class="dest-btn guide-btn" data-base-price="65" data-guide-price="30">Adaugă ghid +€30</button>
+            <a href="#booking" class="dest-btn">Rezervă Experiența</a>
+          </div>
+        </div>
+        <div class="dest-glow"></div>
+      </div>
+
+      <!-- Card 2 – Rânca -->
+      <div class="dest-card tilt-3d" data-tilt-max="9" data-dest="ranca">
+        <div class="dest-card-img-wrap" data-tilt-layer="1">
+          <img src="images/ranca.jpg" alt="Rânca" class="dest-card-img" loading="lazy" />
+        </div>
+        <div class="dest-card-overlay"></div>
+        <div class="tilt-glare"></div>
+        <div class="dest-card-content" data-tilt-layer="2">
+          <span class="dest-tag">Stațiune Montană</span>
+          <h3 class="dest-name">Rânca</h3>
+          <p class="dest-desc">Stațiunea de munte pentru schi, drumeții și aer curat, cu trasee explicate de ghizi locali.</p>
+          <div class="dest-meta">
+            <span>1.600m altitudine</span>
+            <span class="meta-sep">·</span>
+            <span>Ski Resort</span>
+            <span class="meta-sep">·</span>
+            <span class="dest-price">de la €55</span>
+          </div>
+          <div class="dest-card-actions">
+            <button type="button" class="dest-btn guide-btn" data-base-price="55" data-guide-price="30">Adaugă ghid +€30</button>
+            <a href="#booking" class="dest-btn">Rezervă</a>
+          </div>
+        </div>
+        <div class="dest-glow"></div>
+      </div>
+
+      <!-- Card 3 – Coloana Infinitului -->
+      <div class="dest-card tilt-3d" data-tilt-max="9" data-dest="coloana">
+        <div class="dest-card-img-wrap" data-tilt-layer="1">
+          <img src="images/coloana.jpg" alt="Coloana Infinitului" class="dest-card-img" loading="lazy" />
+        </div>
+        <div class="dest-card-overlay"></div>
+        <div class="tilt-glare"></div>
+        <div class="dest-card-content" data-tilt-layer="2">
+          <span class="dest-tag">Artă & Cultură</span>
+          <h3 class="dest-name">Coloana Infinitului</h3>
+          <p class="dest-desc">Opera lui Brâncuși, simbol al Gorjului. Un ghid îți va povesti fiecare detaliu al sculpturii.</p>
+          <div class="dest-meta">
+            <span>Târgu Jiu</span>
+            <span class="meta-sep">·</span>
+            <span>29.35m</span>
+            <span class="meta-sep">·</span>
+            <span class="dest-price">de la €35</span>
+          </div>
+          <div class="dest-card-actions">
+            <button type="button" class="dest-btn guide-btn" data-base-price="35" data-guide-price="30">Adaugă ghid +€30</button>
+            <a href="#booking" class="dest-btn">Descoperă</a>
+          </div>
+        </div>
+        <div class="dest-glow"></div>
+      </div>
+
+      <!-- Card 4 – Peștera Muierilor -->
+      <div class="dest-card tilt-3d" data-tilt-max="9" data-dest="pestera">
+        <div class="dest-card-img-wrap" data-tilt-layer="1">
+          <img src="images/pestera.jpg" alt="Peștera Muierilor" class="dest-card-img" loading="lazy" />
+        </div>
+        <div class="dest-card-overlay"></div>
+        <div class="tilt-glare"></div>
+        <div class="dest-card-content" data-tilt-layer="2">
+          <span class="dest-tag">Speologie</span>
+          <h3 class="dest-name">Peștera Muierilor</h3>
+          <p class="dest-desc">Minunăția subterană din Baia de Fier, explicată de ghizi specializați pentru o experiență completă.</p>
+          <div class="dest-meta">
+            <span>Baia de Fier</span>
+            <span class="meta-sep">·</span>
+            <span>3.600m</span>
+            <span class="meta-sep">·</span>
+            <span class="dest-price">de la €42</span>
+          </div>
+          <div class="dest-card-actions">
+            <button type="button" class="dest-btn guide-btn" data-base-price="42" data-guide-price="30">Adaugă ghid +€30</button>
+            <a href="#booking" class="dest-btn">Explorează</a>
+          </div>
+        </div>
+        <div class="dest-glow"></div>
+      </div>
+
+      <!-- Card 5 – Cheile Sohodolului -->
+      <div class="dest-card dest-card--wide tilt-3d" data-tilt-max="9" data-dest="cheile">
+        <div class="dest-card-img-wrap" data-tilt-layer="1">
+          <img src="images/cheile.jpg" alt="Cheile Sohodolului" class="dest-card-img" loading="lazy" />
+        </div>
+        <div class="dest-card-overlay"></div>
+        <div class="tilt-glare"></div>
+        <div class="dest-card-content" data-tilt-layer="2">
+          <span class="dest-tag">Natură Sălbatică</span>
+          <h3 class="dest-name">Cheile Sohodolului</h3>
+          <p class="dest-desc">Canionul cu stânci impresionante, ideea pentru drumeții ghidate și povești despre natură.</p>
+          <div class="dest-meta">
+            <span>Gorj</span>
+            <span class="meta-sep">·</span>
+            <span>Arie protejată</span>
+            <span class="meta-sep">·</span>
+            <span class="dest-price">de la €40</span>
+          </div>
+          <div class="dest-card-actions">
+            <button type="button" class="dest-btn guide-btn" data-base-price="40" data-guide-price="30">Adaugă ghid +€30</button>
+            <a href="#booking" class="dest-btn">Aventurează-te</a>
+          </div>
+        </div>
+        <div class="dest-glow"></div>
+      </div>
+
+      <!-- Card 6 – Mănăstirea Tismana -->
+      <div class="dest-card tilt-3d" data-tilt-max="9" data-dest="tismana">
+        <div class="dest-card-img-wrap" data-tilt-layer="1">
+          <img src="images/tismana.jpg" alt="Mănăstirea Tismana" class="dest-card-img" loading="lazy" />
+        </div>
+        <div class="dest-card-overlay"></div>
+        <div class="tilt-glare"></div>
+        <div class="dest-card-content" data-tilt-layer="2">
+          <span class="dest-tag">Spiritualitate</span>
+          <h3 class="dest-name">Mănăstirea Tismana</h3>
+          <p class="dest-desc">Mănăstire veche, liniștită și încărcată de istorie, unde un ghid îți va arăta cele mai importante detalii.</p>
+          <div class="dest-meta">
+            <span>Tismana</span>
+            <span class="meta-sep">·</span>
+            <span>Sec. XIV</span>
+            <span class="meta-sep">·</span>
+            <span class="dest-price">de la €30</span>
+          </div>
+          <div class="dest-card-actions">
+            <button type="button" class="dest-btn guide-btn" data-base-price="30" data-guide-price="30">Adaugă ghid +€30</button>
+            <a href="#booking" class="dest-btn">Vizitează</a>
+          </div>
+        </div>
+        <div class="dest-glow"></div>
+      </div>
+
+      <!-- Card 7 – Muzeul Satului Gorjean -->
+      <div class="dest-card tilt-3d" data-tilt-max="9" data-dest="muzeul-satului">
+        <div class="dest-card-img-wrap" data-tilt-layer="1">
+          <img src="images/casa-gorjeana.jpg" alt="Muzeul Satului Gorjean" class="dest-card-img" loading="lazy" />
+        </div>
+        <div class="dest-card-overlay"></div>
+        <div class="tilt-glare"></div>
+        <div class="dest-card-content" data-tilt-layer="2">
+          <span class="dest-tag">Tradiție</span>
+          <h3 class="dest-name">Muzeul Satului Gorjean</h3>
+          <p class="dest-desc">O colecție vie de case și meșteșuguri oltenești, explicată de ghizi ce știu poveștile locului.</p>
+          <div class="dest-meta">
+            <span>Târgu Jiu</span>
+            <span class="meta-sep">·</span>
+            <span>Cultură rurală</span>
+            <span class="meta-sep">·</span>
+            <span class="dest-price">de la €28</span>
+          </div>
+          <div class="dest-card-actions">
+            <button type="button" class="dest-btn guide-btn" data-base-price="28" data-guide-price="30">Adaugă ghid +€30</button>
+            <a href="#booking" class="dest-btn">Descoperă</a>
+          </div>
+        </div>
+        <div class="dest-glow"></div>
+      </div>
+
+      <!-- Card 8 – Casa Memorială Tudor Vladimirescu -->
+      <div class="dest-card tilt-3d" data-tilt-max="9" data-dest="tudor-vladimirescu">
+        <div class="dest-card-img-wrap" data-tilt-layer="1">
+          <img src="images/coloana.jpg" alt="Casa Memorială Tudor Vladimirescu" class="dest-card-img" loading="lazy" />
+        </div>
+        <div class="dest-card-overlay"></div>
+        <div class="tilt-glare"></div>
+        <div class="dest-card-content" data-tilt-layer="2">
+          <span class="dest-tag">Istorie</span>
+          <h3 class="dest-name">Casa Memorială Tudor Vladimirescu</h3>
+          <p class="dest-desc">Casa memorială a liderului pandurilor, locul ideal pentru o vizită istorică ghidată.</p>
+          <div class="dest-meta">
+            <span>Târgu Jiu</span>
+            <span class="meta-sep">·</span>
+            <span>Istoric</span>
+            <span class="meta-sep">·</span>
+            <span class="dest-price">de la €25</span>
+          </div>
+          <div class="dest-card-actions">
+            <button type="button" class="dest-btn guide-btn" data-base-price="25" data-guide-price="30">Adaugă ghid +€30</button>
+            <a href="#booking" class="dest-btn">Vizitează</a>
+          </div>
+        </div>
+        <div class="dest-glow"></div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════ ACCOMMODATIONS SECTION -->
+  <section id="accommodations">
+    <div class="section-header" data-reveal>
+      <span class="section-tag">CAZĂRI</span>
+      <h2 class="section-title">Găsește cazarea potrivită în <em>Gorj</em></h2>
+      <p class="section-desc">Compară pensiuni, hoteluri, cabane și vile din județul Gorj — filtrează după zonă și tip, vezi prețul pe noapte și rezervă direct.</p>
+    </div>
+
+    <div class="accom-summary-counts" data-reveal>
+      <div class="accom-summary-card tilt-3d" data-tilt-max="10">
+        <span class="accom-summary-number">175–180</span>
+        <span>Pensiuni turistice și agroturistice</span>
+      </div>
+      <div class="accom-summary-card tilt-3d" data-tilt-max="10">
+        <span class="accom-summary-number">35–40</span>
+        <span>Camere și apartamente de închiriat</span>
+      </div>
+      <div class="accom-summary-card tilt-3d" data-tilt-max="10">
+        <span class="accom-summary-number">18</span>
+        <span>Hoteluri</span>
+      </div>
+      <div class="accom-summary-card tilt-3d" data-tilt-max="10">
+        <span class="accom-summary-number">27</span>
+        <span>Cabane și vile turistice</span>
+      </div>
+      <div class="accom-summary-card tilt-3d" data-tilt-max="10">
+        <span class="accom-summary-number">19</span>
+        <span>Hosteluri și moteluri</span>
+      </div>
+    </div>
+
+    <!-- NEW: filter + sort bar -->
+    <div class="accom-toolbar">
+      <div class="accom-filter-chips" id="accom-filter-region" role="group" aria-label="Filtrează după zonă">
+        <button type="button" class="filter-chip active" data-filter-region="all">Toate zonele</button>
+        <button type="button" class="filter-chip" data-filter-region="Târgu Jiu">Târgu Jiu</button>
+        <button type="button" class="filter-chip" data-filter-region="Rânca">Rânca</button>
+        <button type="button" class="filter-chip" data-filter-region="Transalpina">Transalpina</button>
+        <button type="button" class="filter-chip" data-filter-region="Tismana">Tismana</button>
+        <button type="button" class="filter-chip" data-filter-region="Baia de Fier">Baia de Fier</button>
+      </div>
+      <div class="accom-toolbar-right">
+        <select id="accom-filter-type" class="accom-select-mini" aria-label="Filtrează după tip">
+          <option value="all">Orice tip</option>
+          <option value="Hotel">Hotel</option>
+          <option value="Pensiune">Pensiune</option>
+          <option value="Vilă">Vilă</option>
+          <option value="Cabană">Cabană</option>
+        </select>
+        <select id="accom-sort" class="accom-select-mini" aria-label="Sortează">
+          <option value="recommended">Recomandate</option>
+          <option value="price-asc">Preț crescător</option>
+          <option value="price-desc">Preț descrescător</option>
+          <option value="rating-desc">Cele mai bine notate</option>
+        </select>
+      </div>
+    </div>
+    <p class="accom-results-count" id="accom-results-count" aria-live="polite"></p>
+
+    <!-- NEW: primary visual card grid -->
+    <div class="accom-cards-grid" id="accom-cards-grid"></div>
+    <p class="accom-empty-state hidden" id="accom-empty-state">Nicio cazare nu corespunde filtrelor alese. <button type="button" id="accom-reset-filters" class="btn-ghost btn-ghost--small">Resetează filtrele</button></p>
+
+    <!-- Secondary: interactive map -->
+    <div class="accom-grid">
+      <div class="accom-map-card tilt-3d" data-tilt-max="3">
+        <div class="accom-map-head">
+          <span class="section-tag">HARTĂ</span>
+          <h3>Harta cazărilor din Gorj</h3>
+          <p>Dă click pe un punct pentru a vedea detaliile cazării. Fiecare locație este localizată în județul Gorj, România.</p>
+        </div>
+        <div class="accom-map-frame" id="accom-map-frame" aria-label="Hartă cazări Gorj">
+          <div class="accom-map-grid"></div>
+          <div class="accom-map-svg" aria-hidden="true">
+            <svg viewBox="0 0 600 500" class="accom-map-svg-inline" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+              <defs>
+                <radialGradient id="gorjFill" cx="50%" cy="45%" r="70%">
+                  <stop offset="0%" stop-color="#c9a84c" stop-opacity="0.22"/>
+                  <stop offset="60%" stop-color="#c9a84c" stop-opacity="0.08"/>
+                  <stop offset="100%" stop-color="#c9a84c" stop-opacity="0.02"/>
+                </radialGradient>
+                <filter id="gorjGlow" x="-20%" y="-20%" width="140%" height="140%">
+                  <feGaussianBlur stdDeviation="3.5"/>
+                </filter>
+              </defs>
+              <path d="M120,90 L210,70 L300,80 L380,60 L470,95 L520,150 L505,220 L530,290 L495,360 L430,410 L360,425 L290,440 L220,420 L160,395 L110,340 L85,265 L95,180 Z"
+                    fill="url(#gorjFill)" stroke="#c9a84c" stroke-width="2" stroke-opacity="0.85" stroke-linejoin="round" filter="url(#gorjGlow)"/>
+              <path d="M120,90 L210,70 L300,80 L380,60 L470,95 L520,150 L505,220 L530,290 L495,360 L430,410 L360,425 L290,440 L220,420 L160,395 L110,340 L85,265 L95,180 Z"
+                    fill="none" stroke="#e6c66a" stroke-width="1" stroke-opacity="0.55" stroke-linejoin="round"/>
+              <path d="M260,90 Q280,180 270,260 Q260,340 290,430" fill="none" stroke="#6fb3c9" stroke-width="1.4" stroke-opacity="0.45" stroke-linecap="round"/>
+              <path d="M150,150 L210,130 L260,160 L320,140 L380,170 L440,150" fill="none" stroke="#c9a84c" stroke-width="0.8" stroke-opacity="0.35" stroke-dasharray="2 4"/>
+              <g class="accom-map-cities">
+                <circle cx="270" cy="265" r="3.2" fill="#c9a84c"/>
+                <text x="278" y="262" fill="#e6c66a" font-size="11" font-family="serif" letter-spacing="1.5">TG. JIU</text>
+                <circle cx="395" cy="180" r="2.4" fill="#c9a84c"/>
+                <text x="402" y="178" fill="#c9a84c" font-size="9" font-family="serif" letter-spacing="1">NOVACI</text>
+                <circle cx="180" cy="350" r="2.4" fill="#c9a84c"/>
+                <text x="188" y="354" fill="#c9a84c" font-size="9" font-family="serif" letter-spacing="1">MOTRU</text>
+                <circle cx="155" cy="220" r="2.4" fill="#c9a84c"/>
+                <text x="98" y="218" fill="#c9a84c" font-size="9" font-family="serif" letter-spacing="1">TISMANA</text>
+                <circle cx="450" cy="130" r="2.4" fill="#c9a84c"/>
+                <text x="458" y="128" fill="#c9a84c" font-size="9" font-family="serif" letter-spacing="1">RÂNCA</text>
+              </g>
+              <g class="accom-map-compass" transform="translate(540,420)">
+                <circle r="18" fill="none" stroke="#c9a84c" stroke-opacity="0.4"/>
+                <path d="M0,-14 L4,0 L0,14 L-4,0 Z" fill="#c9a84c" fill-opacity="0.7"/>
+                <text x="0" y="-22" fill="#c9a84c" font-size="9" text-anchor="middle" font-family="serif">N</text>
+              </g>
+            </svg>
+          </div>
+          <div class="accom-map-county-label">JUDEȚUL GORJ · ROMÂNIA</div>
+          <div class="accom-map-overlay"></div>
+        </div>
+        <p class="accom-map-note">Click pe un punct sau pe un card din grilă pentru a deschide detaliile cazării.</p>
+      </div>
+
+      <div class="accom-list-card">
+        <div class="accom-list-head">
+          <span class="section-tag">LISTA RAPIDĂ</span>
+          <p>Toate cazările selectate, pentru navigare rapidă alături de hartă.</p>
+        </div>
+        <div class="accom-locations" id="accom-locations"></div>
+      </div>
+    </div>
+
+    <div class="accom-detail-panel hidden" id="accom-detail-panel" role="dialog" aria-modal="true" aria-labelledby="accom-detail-title">
+      <button class="accom-detail-close" id="accom-detail-close" aria-label="Închide">✕</button>
+      <div class="accom-detail-grid">
+        <div class="accom-detail-gallery" id="accom-detail-gallery"></div>
+        <div class="accom-detail-copy">
+          <span class="section-tag">DETALII CAZARE</span>
+          <h3 class="accom-detail-title" id="accom-detail-title"></h3>
+          <p class="accom-detail-text" id="accom-detail-text"></p>
+          <div class="accom-detail-meta" id="accom-detail-meta"></div>
+          <div class="accom-detail-dist" id="accom-detail-dist"></div>
+          <div class="accom-detail-btns">
+            <a class="btn-primary accom-detail-google" id="accom-detail-google" target="_blank" rel="noopener"><span>Vezi pe Google Maps</span></a>
+            <button class="btn-primary accom-detail-book" id="accom-detail-book" type="button"><span>Rezervă această cazare</span></button>
+            <button class="btn-ghost accom-detail-closebtn" id="accom-detail-closebtn" type="button"><span>Închide</span></button>
+          </div>
+        </div>
+      </div>
+      <div class="accom-map-preview">
+        <div class="accom-map-preview-label">Preview Google Maps</div>
+        <iframe id="google-map-frame" src="https://www.google.com/maps?q=Gorj+Romania&output=embed" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════ CINEMATIC GALLERY -->
+  <section id="gallery">
+    <div class="section-header" data-reveal>
+      <span class="section-tag">GALERIE FOTO</span>
+      <h2 class="section-title">Gorjul în <em>Imagini</em></h2>
+    </div>
+
+    <div class="gallery-mosaic">
+      <div class="gallery-item gallery-item--tall tilt-3d" data-tilt-max="6" data-caption="Transalpina – Drumul Zeilor">
+        <img src="images/transalpina.jpg" alt="Transalpina" loading="lazy" />
+        <div class="gallery-caption">Transalpina · Drumul Zeilor</div>
+      </div>
+      <div class="gallery-item tilt-3d" data-tilt-max="6" data-caption="Munții Parâng">
+        <img src="images/ranca.jpg" alt="Munții Gorj" loading="lazy" />
+        <div class="gallery-caption">Munții Parâng · Gorj</div>
+      </div>
+      <div class="gallery-item tilt-3d" data-tilt-max="6" data-caption="Coloana Infinitului">
+        <img src="images/coloana.jpg" alt="Coloana Infinitului" loading="lazy" />
+        <div class="gallery-caption">Coloana Infinitului · Brâncuși</div>
+      </div>
+      <div class="gallery-item gallery-item--wide tilt-3d" data-tilt-max="6" data-caption="Cheile Sohodolului">
+        <img src="images/cheile.jpg" alt="Cheile Sohodolului" loading="lazy" />
+        <div class="gallery-caption">Cheile Sohodolului</div>
+      </div>
+      <div class="gallery-item tilt-3d" data-tilt-max="6" data-caption="Păduri seculare">
+        <img src="images/tismana.jpg" alt="Pădure Gorj" loading="lazy" />
+        <div class="gallery-caption">Păduri Seculare · Tismana</div>
+      </div>
+      <div class="gallery-item tilt-3d" data-tilt-max="6" data-caption="Natură sălbatică">
+        <img src="images/pestera.jpg" alt="Peștera Muierilor" loading="lazy" />
+        <div class="gallery-caption">Peștera Muierilor</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════ ABOUT SECTION -->
+  <section id="about">
+    <div class="about-inner">
+      <div class="about-visual tilt-3d" data-tilt-max="6">
+        <div class="about-img-stack">
+          <img src="images/casa-gorjeana.jpg" alt="Pensiune tradițională gorjeană" class="about-img about-img--back" loading="lazy" />
+          <img src="images/hero-dusk.jpg" alt="Apus în Munții Parâng" class="about-img about-img--front" loading="lazy" />
+        </div>
+        <div class="about-badge-float">
+          <span class="about-badge-year">Est.</span>
+          <span class="about-badge-num">2024</span>
+        </div>
+      </div>
+
+      <div class="about-text">
+        <span class="section-tag">DESPRE NOI</span>
+        <h2 class="about-title">O poveste despre <em>frumusețe</em> și <em>autenticitate</em></h2>
+        <p class="about-p">
+          Gorj Booking s-a născut dintr-o pasiune profundă pentru peisajele magnifice ale Olteniei montane. Credem că județul Gorj ascunde comori care merită să fie descoperite de întreaga lume.
+        </p>
+        <p class="about-p">
+          De la înălțimile vertiginoase ale Transalpinei la profunzimea mistică a Peșterii Muierilor, fiecare experiență este curată cu atenție pentru a oferi clienților noștri amintiri de neprețuit.
+        </p>
+        <div class="about-features">
+          <div class="about-feat">
+            <span class="feat-icon">◈</span>
+            <div>
+              <strong>Experiențe Curate</strong>
+              <p>Fiecare pachet este selecționat de experți locali</p>
+            </div>
+          </div>
+          <div class="about-feat">
+            <span class="feat-icon">◈</span>
+            <div>
+              <strong>Ghizi Certificați</strong>
+              <p>Profesionalism și siguranță în fiecare aventură</p>
+            </div>
+          </div>
+          <div class="about-feat">
+            <span class="feat-icon">◈</span>
+            <div>
+              <strong>Sustenabilitate</strong>
+              <p>Turism responsabil față de natură și comunitate</p>
+            </div>
+          </div>
+        </div>
+        <a href="#booking" class="btn-primary"><span>Descoperă Pachete</span></a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════ EXPERIENCES STRIP (3D flip cards) -->
+  <div class="experiences-strip">
+    <div class="exp-item flip-3d" tabindex="0">
+      <div class="exp-item-inner">
+        <div class="exp-item-face exp-item-front">
+          <span class="exp-icon">🏔️</span>
+          <span class="exp-label">Trasee Alpine</span>
+        </div>
+        <div class="exp-item-face exp-item-back">
+          <span class="exp-back-text">Ghizi montani certificați pe 47 de trasee marcate</span>
+        </div>
+      </div>
+    </div>
+    <div class="exp-item flip-3d" tabindex="0">
+      <div class="exp-item-inner">
+        <div class="exp-item-face exp-item-front">
+          <span class="exp-icon">🎿</span>
+          <span class="exp-label">Ski & Snowboard</span>
+        </div>
+        <div class="exp-item-face exp-item-back">
+          <span class="exp-back-text">Pârtii la Rânca, închiriere echipament inclusă</span>
+        </div>
+      </div>
+    </div>
+    <div class="exp-item flip-3d" tabindex="0">
+      <div class="exp-item-inner">
+        <div class="exp-item-face exp-item-front">
+          <span class="exp-icon">🏛️</span>
+          <span class="exp-label">Patrimoniu Cultural</span>
+        </div>
+        <div class="exp-item-face exp-item-back">
+          <span class="exp-back-text">Brâncuși, mănăstiri și case memoriale</span>
+        </div>
+      </div>
+    </div>
+    <div class="exp-item flip-3d" tabindex="0">
+      <div class="exp-item-inner">
+        <div class="exp-item-face exp-item-front">
+          <span class="exp-icon">🍷</span>
+          <span class="exp-label">Gastronomie Locală</span>
+        </div>
+        <div class="exp-item-face exp-item-back">
+          <span class="exp-back-text">Bucătărie oltenească la pensiuni și crame</span>
+        </div>
+      </div>
+    </div>
+    <div class="exp-item flip-3d" tabindex="0">
+      <div class="exp-item-inner">
+        <div class="exp-item-face exp-item-front">
+          <span class="exp-icon">🦅</span>
+          <span class="exp-label">Wildlife & Natură</span>
+        </div>
+        <div class="exp-item-face exp-item-back">
+          <span class="exp-back-text">Arii protejate și faună de munte</span>
+        </div>
+      </div>
+    </div>
+    <div class="exp-item flip-3d" tabindex="0">
+      <div class="exp-item-inner">
+        <div class="exp-item-face exp-item-front">
+          <span class="exp-icon">🧘</span>
+          <span class="exp-label">Wellness & Spa</span>
+        </div>
+        <div class="exp-item-face exp-item-back">
+          <span class="exp-back-text">Spa montan și relaxare după drumeții</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ TESTIMONIALS (3D coverflow) -->
+  <section id="testimonials">
+    <div class="section-header" data-reveal>
+      <span class="section-tag">RECENZII</span>
+      <h2 class="section-title">Călătorii care au <em>rămas</em> cu ceva</h2>
+      <p class="section-desc">Impresii de la oaspeți care au rezervat cazări și experiențe prin Gorj Booking.</p>
+    </div>
+
+    <div class="testimonial-coverflow" id="testimonial-coverflow">
+      <button type="button" class="testimonial-nav testimonial-nav--prev" id="testimonial-prev" aria-label="Recenzia anterioară">‹</button>
+
+      <div class="testimonial-track" id="testimonial-track">
+        <article class="testimonial-card" data-index="0">
+          <div class="testimonial-stars" aria-label="5 din 5 stele">★★★★★</div>
+          <p class="testimonial-quote">Ghidul de pe Transalpina ne-a arătat locuri pe care nu le-am fi găsit singuri. Rezervarea s-a făcut în cinci minute, iar cazarea de la Vila Alpina a fost exact ca în poze.</p>
+          <div class="testimonial-author">
+            <span class="testimonial-avatar">IM</span>
+            <div class="testimonial-author-info">
+              <strong>Ioana M.</strong>
+              <span>Vila Alpina Transalpina · iulie 2025</span>
+            </div>
+          </div>
+        </article>
+
+        <article class="testimonial-card" data-index="1">
+          <div class="testimonial-stars" aria-label="5 din 5 stele">★★★★★</div>
+          <p class="testimonial-quote">Am rezervat pentru familie la Rânca, cu tot cu ghid pentru Peștera Muierilor. Copiii vorbesc și acum despre stalactite. Comunicare rapidă și fără bătăi de cap.</p>
+          <div class="testimonial-author">
+            <span class="testimonial-avatar">RP</span>
+            <div class="testimonial-author-info">
+              <strong>Radu P.</strong>
+              <span>Pensiunea Antonia Spa · august 2025</span>
+            </div>
+          </div>
+        </article>
+
+        <article class="testimonial-card" data-index="2">
+          <div class="testimonial-stars" aria-label="4.5 din 5 stele">★★★★☆</div>
+          <p class="testimonial-quote">Cabana Terra are cel mai bun ceaun din zonă, spus serios. Am ajuns direct de pe drum, fără să căutăm — harta din aplicație ne-a scutit de întrebat localnicii de trei ori.</p>
+          <div class="testimonial-author">
+            <span class="testimonial-avatar">AV</span>
+            <div class="testimonial-author-info">
+              <strong>Andrei V.</strong>
+              <span>Cabana Terra, Rânca · septembrie 2025</span>
+            </div>
+          </div>
+        </article>
+
+        <article class="testimonial-card" data-index="3">
+          <div class="testimonial-stars" aria-label="5 din 5 stele">★★★★★</div>
+          <p class="testimonial-quote">Weekend liniștit la Tismana, cu retreat în pădure și mănăstirea la zece minute de mers pe jos. Anularea gratuită ne-a dat curaj să rezervăm cu mult timp înainte.</p>
+          <div class="testimonial-author">
+            <span class="testimonial-avatar">CS</span>
+            <div class="testimonial-author-info">
+              <strong>Cristina S.</strong>
+              <span>Tismana Forest Retreat · mai 2025</span>
+            </div>
+          </div>
+        </article>
+
+        <article class="testimonial-card" data-index="4">
+          <div class="testimonial-stars" aria-label="5 din 5 stele">★★★★★</div>
+          <p class="testimonial-quote">Am mers doar pentru Coloana Infinitului, dar am rămas trei zile. Ghidul de artă ne-a explicat ansamblul lui Brâncuși mult mai bine decât orice am fi citit singuri.</p>
+          <div class="testimonial-author">
+            <span class="testimonial-avatar">MD</span>
+            <div class="testimonial-author-info">
+              <strong>Mihai D.</strong>
+              <span>Hotel Central Târgu Jiu · octombrie 2025</span>
+            </div>
+          </div>
+        </article>
+
+        <article class="testimonial-card" data-index="5">
+          <div class="testimonial-stars" aria-label="4.5 din 5 stele">★★★★☆</div>
+          <p class="testimonial-quote">Prima dată când am folosit un ghid local pentru Cheile Sohodolului și acum nu mai concep drumeție fără. Prețul final s-a văzut clar înainte să plătim, fără costuri ascunse.</p>
+          <div class="testimonial-author">
+            <span class="testimonial-avatar">LT</span>
+            <div class="testimonial-author-info">
+              <strong>Larisa T.</strong>
+              <span>Vila Ozon Rânca · iunie 2025</span>
+            </div>
+          </div>
+        </article>
+      </div>
+
+      <button type="button" class="testimonial-nav testimonial-nav--next" id="testimonial-next" aria-label="Recenzia următoare">›</button>
+    </div>
+    <div class="testimonial-dots" id="testimonial-dots"></div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════ FAQ -->
+  <section id="faq">
+    <div class="section-header" data-reveal>
+      <span class="section-tag">ÎNTREBĂRI FRECVENTE</span>
+      <h2 class="section-title">Tot ce trebuie să știi înainte de <em>rezervare</em></h2>
+    </div>
+
+    <div class="faq-list" id="faq-list">
+      <div class="faq-item">
+        <button type="button" class="faq-question" aria-expanded="false">
+          <span>Cum funcționează rezervarea pe Gorj Booking?</span>
+          <span class="faq-icon" aria-hidden="true"></span>
+        </button>
+        <div class="faq-answer">
+          <p>Alegi o cazare din listă sau de pe hartă, completezi formularul de rezervare cu perioada dorită și numărul de persoane, apoi trimiți cererea. Primești confirmarea pe email în maximum 24 de ore.</p>
+        </div>
+      </div>
+      <div class="faq-item">
+        <button type="button" class="faq-question" aria-expanded="false">
+          <span>Pot anula sau modifica o rezervare?</span>
+          <span class="faq-icon" aria-hidden="true"></span>
+        </button>
+        <div class="faq-answer">
+          <p>Da. Anularea este gratuită dacă este făcută cu cel puțin 48 de ore înainte de check-in. Pentru modificări de dată, contactează-ne prin email sau telefon și actualizăm rezervarea fără costuri suplimentare.</p>
+        </div>
+      </div>
+      <div class="faq-item">
+        <button type="button" class="faq-question" aria-expanded="false">
+          <span>Ce include exact opțiunea de ghid local?</span>
+          <span class="faq-icon" aria-hidden="true"></span>
+        </button>
+        <div class="faq-answer">
+          <p>Ghidul local certificat te însoțește pe traseu, oferă context istoric și cultural și cunoaște variantele de traseu în funcție de vreme și nivel de pregătire fizică. Costul de +€30 se aplică o singură dată per rezervare, nu per persoană.</p>
+        </div>
+      </div>
+      <div class="faq-item">
+        <button type="button" class="faq-question" aria-expanded="false">
+          <span>Cum se calculează prețul final afișat?</span>
+          <span class="faq-icon" aria-hidden="true"></span>
+        </button>
+        <div class="faq-answer">
+          <p>Prețul final este preț pe noapte înmulțit cu numărul de nopți, plus tariful de ghid dacă a fost bifat. Totul este recalculat instant în formular, fără costuri ascunse la finalizare.</p>
+        </div>
+      </div>
+      <div class="faq-item">
+        <button type="button" class="faq-question" aria-expanded="false">
+          <span>Rezervați și pentru grupuri sau evenimente?</span>
+          <span class="faq-icon" aria-hidden="true"></span>
+        </button>
+        <div class="faq-answer">
+          <p>Da, mai ales la Cabana Terra și Taverna Olteanului, care au spații pregătite pentru grupuri mai mari. Menționează numărul de persoane în câmpul de cerințe speciale din formular și revenim cu o ofertă dedicată.</p>
+        </div>
+      </div>
+      <div class="faq-item">
+        <button type="button" class="faq-question" aria-expanded="false">
+          <span>Trebuie să am cont pentru a rezerva?</span>
+          <span class="faq-icon" aria-hidden="true"></span>
+        </button>
+        <div class="faq-answer">
+          <p>Da — un cont gratuit ne permite să salvăm rezervarea în profilul tău și să îți trimitem confirmarea. Crearea contului durează mai puțin de un minut, direct din formularul de rezervare.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════ BOOKING SECTION -->
+  <section id="booking">
+    <div class="booking-bg">
+      <img src="images/cheile.jpg" alt="Cheile Sohodolului" loading="lazy" />
+      <div class="booking-overlay"></div>
+    </div>
+    <div class="booking-content">
+      <div class="booking-text" data-reveal>
+        <span class="section-tag">REZERVĂRI</span>
+        <h2 class="booking-title">Planifică-ți <em>Aventura</em></h2>
+        <p class="booking-desc">Completează formularul și echipa noastră va crea pentru tine o experiență de neuitat în inima Gorjului.</p>
+        <div class="booking-promise">
+          <div class="promise-item">
+            <span>✓</span> Confirmare în 24 ore
+          </div>
+          <div class="promise-item">
+            <span>✓</span> Anulare gratuită
+          </div>
+          <div class="promise-item">
+            <span>✓</span> Suport dedicat 24/7
+          </div>
+        </div>
+      </div>
+
+      <div class="booking-form-wrap glass tilt-3d" data-tilt-max="2" data-tilt-glare="false">
+        <div class="booking-divider"></div>
+
+        <div class="booking-form-panel">
+          <div class="booking-form-header">
+            <h3>Rezervă acum</h3>
+            <p>Vezi instant prețul final cu sau fără ghid local, păstrând stilul premium al site-ului.</p>
+          </div>
+
+          <div class="booking-summary-card">
+            <div class="booking-summary-copy">
+              <span class="section-tag">REZUMAT</span>
+              <h4>Alege experiența dorită</h4>
+              <p>Setează ghidul local și vezi imediat diferența de preț pentru rezervarea ta.</p>
+            </div>
+            <div class="booking-summary-pricebox">
+              <div class="booking-summary-row">
+                <span>Fără ghid</span>
+                <strong id="summary-base-price">-</strong>
+              </div>
+              <div class="booking-summary-row">
+                <span>Ghid local</span>
+                <strong id="summary-guide-price">€0</strong>
+              </div>
+              <div class="booking-summary-row booking-summary-total">
+                <span>Total final</span>
+                <strong id="summary-total-price">-</strong>
+              </div>
+            </div>
+          </div>
+
+          <form id="booking-form" novalidate>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="fname">Prenume</label>
+                <input type="text" id="fname" name="fname" placeholder="Ion" required autocomplete="given-name" />
+              </div>
+              <div class="form-group">
+                <label for="lname">Nume</label>
+                <input type="text" id="lname" name="lname" placeholder="Popescu" required autocomplete="family-name" />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="email">Email</label>
+              <input type="email" id="email" name="email" placeholder="ion@email.ro" required autocomplete="email" />
+            </div>
+
+            <div class="form-group">
+              <label for="accommodation">Cazare</label>
+              <select id="accommodation" name="accommodation" required>
+                <option value="" disabled selected>Alege cazarea</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>Ghid local</label>
+              <div class="guide-switch" role="group" aria-label="Alege dacă vrei ghid local">
+                <label class="guide-option" for="guide-option-off">
+                  <input type="radio" id="guide-option-off" name="guide-option" value="off" checked />
+                  <span class="guide-pill">Fără ghid</span>
+                </label>
+                <label class="guide-option" for="guide-option-on">
+                  <input type="radio" id="guide-option-on" name="guide-option" value="on" />
+                  <span class="guide-pill">Cu ghid +€30</span>
+                </label>
+              </div>
+              <div class="guide-note" id="guide-note">Adaugă ghid local pentru +€30 / rezervare.</div>
+            </div>
+
+            <div class="form-group" id="room-type-wrap" style="display:none;">
+              <label for="room-type">Tip cameră</label>
+              <select id="room-type" name="roomType"></select>
+              <div class="room-help">
+                <span id="price-per-night">Preț: -</span>
+                <span id="nights-count" style="margin-left:1rem">Nopți: -</span>
+              </div>
+            </div>
+
+            <div class="form-group" id="total-wrap" style="display:none;">
+              <label>Total estimat</label>
+              <div class="total-price" id="total-price">-</div>
+              <div class="total-breakdown" id="price-breakdown">Alege o cazare pentru a vedea totalul.</div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="checkin">Check-in</label>
+                <input type="date" id="checkin" name="checkin" required />
+              </div>
+              <div class="form-group">
+                <label for="checkout">Check-out</label>
+                <input type="date" id="checkout" name="checkout" required />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="guests">Număr persoane</label>
+              <select id="guests" name="guests">
+                <option value="1">1 persoană</option>
+                <option value="2" selected>2 persoane</option>
+                <option value="3">3 persoane</option>
+                <option value="4">4 persoane</option>
+                <option value="5+">5+ persoane</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="message">Cerințe speciale (opțional)</label>
+              <textarea id="message" name="message" placeholder="Spuneți-ne ce vă doriți..." rows="3"></textarea>
+            </div>
+
+            <button type="button" class="btn-submit" id="booking-submit-btn" onclick="return window.__submitBookingReservation && window.__submitBookingReservation(event)">
+              <span class="btn-submit-text">Trimite Rezervarea</span>
+              <span class="btn-submit-icon">→</span>
+            </button>
+          </form>
+          <div class="form-guest-note" id="guest-note">Te poți autentifica sau înregistra pentru a salva rezervările în profilul tău.</div>
+          <div class="form-success" id="form-success">
+            <div class="success-icon">✓</div>
+            <h3>Rezervare salvată!</h3>
+            <p>Rezervarea ta a fost înregistrată în contul tău. Vei primi confirmarea în maxim 24h.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════ STICKY BOOKING BAR -->
+  <div class="sticky-booking-bar" id="sticky-booking-bar">
+    <div class="sticky-bar-inner">
+      <span class="sticky-bar-text"><strong>Gata de rezervare?</strong> Verifică disponibilitatea pentru datele tale.</span>
+      <a href="#booking" class="btn-primary sticky-bar-btn"><span>Rezervă acum</span></a>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ FOOTER -->
+  <footer id="footer">
+    <div class="footer-top">
+      <div class="footer-brand">
+        <div class="footer-logo">GORJ <span>BOOKING</span></div>
+        <p class="footer-tagline">Luxury Tourism Experience · Gorj, România</p>
+        <div class="footer-social">
+          <a href="#" class="social-link" aria-label="Instagram">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+          </a>
+          <a href="#" class="social-link" aria-label="Facebook">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+          </a>
+          <a href="#" class="social-link" aria-label="YouTube">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M23.495 6.205a3.007 3.007 0 0 0-2.088-2.088c-1.87-.501-9.396-.501-9.396-.501s-7.507-.01-9.396.501A3.007 3.007 0 0 0 .527 6.205a31.247 31.247 0 0 0-.522 5.805 31.247 31.247 0 0 0 .522 5.783 3.007 3.007 0 0 0 2.088 2.088c1.868.502 9.396.502 9.396.502s7.506 0 9.396-.502a3.007 3.007 0 0 0 2.088-2.088 31.247 31.247 0 0 0 .5-5.783 31.247 31.247 0 0 0-.5-5.805zM9.609 15.601V8.408l6.264 3.602z"/></svg>
+          </a>
+        </div>
+      </div>
+
+      <div class="footer-nav-group">
+        <h4 class="footer-nav-title">Destinații</h4>
+        <ul>
+          <li><a href="#destinations">Transalpina</a></li>
+          <li><a href="#destinations">Coloana Infinitului</a></li>
+          <li><a href="#destinations">Peștera Muierilor</a></li>
+          <li><a href="#destinations">Rânca</a></li>
+          <li><a href="#destinations">Cheile Sohodolului</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-nav-group">
+        <h4 class="footer-nav-title">Servicii</h4>
+        <ul>
+          <li><a href="#accommodations">Cazări</a></li>
+          <li><a href="#booking">Ghizi Turistici</a></li>
+          <li><a href="#booking">Transfer Auto</a></li>
+          <li><a href="#faq">Întrebări frecvente</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-nav-group">
+        <h4 class="footer-nav-title">Contact</h4>
+        <ul>
+          <li><a href="mailto:contact@gorjbooking.ro">contact@gorjbooking.ro</a></li>
+          <li><a href="tel:+40253000000">+40 253 000 000</a></li>
+          <li>Târgu Jiu, Gorj, România</li>
+        </ul>
+      </div>
+
+      <div class="footer-nav-group footer-newsletter">
+        <h4 class="footer-nav-title">Noutăți din Gorj</h4>
+        <p>Trasee noi și oferte de cazare, o dată pe lună.</p>
+        <form class="newsletter-form" id="newsletter-form">
+          <input type="email" placeholder="Adresa ta de email" required aria-label="Email pentru newsletter" />
+          <button type="submit" aria-label="Abonează-te">→</button>
+        </form>
+        <p class="newsletter-note" id="newsletter-note"></p>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <div class="footer-divider"></div>
+      <div class="footer-bottom-inner">
+        <span class="footer-copy">© 2026 GORJ BOOKING. Toate drepturile rezervate.</span>
+        <span class="footer-credits">Created by <strong>Teodor Becheanu</strong> & <strong>Popescu Alexandru</strong></span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Scroll to top -->
+  <button type="button" class="scroll-top-btn" id="scroll-top-btn" aria-label="Sus">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 15l-6-6-6 6"/></svg>
+  </button>
+
+  <!-- Accommodation quick-view modal -->
+  <div class="accom-modal" id="accom-modal" aria-hidden="true">
+    <div class="accom-modal-card" role="dialog" aria-modal="true">
+      <button class="accom-modal-close" id="accom-modal-close" aria-label="Închide">✕</button>
+      <div class="accom-modal-media">
+        <img src="" alt="" id="accom-modal-img" />
+      </div>
+      <div class="accom-modal-content">
+        <h3 class="accom-modal-title" id="accom-modal-title"></h3>
+        <p class="accom-modal-desc" id="accom-modal-desc"></p>
+        <div class="accom-modal-meta" id="accom-modal-meta"></div>
+        <div style="margin-top:1rem;"><a id="accom-modal-book" href="#booking" class="btn-primary"><span>Rezervă</span></a></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Image lightbox -->
+  <div class="image-modal" id="image-modal" aria-hidden="true">
+    <button class="image-modal-close" id="image-modal-close" aria-label="Închide">✕</button>
+    <img src="" alt="" id="image-modal-img" />
+    <div class="image-modal-caption" id="image-modal-caption"></div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
