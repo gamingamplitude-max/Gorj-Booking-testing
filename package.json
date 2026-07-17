@@ -1,0 +1,12 @@
+{
+  "name": "gorj-booking",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Gorj Booking static site with reservation email notifications",
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "nodemailer": "^6.9.14"
+  }
+}
