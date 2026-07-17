@@ -128,11 +128,6 @@ module.exports = async (req, res) => {
     return res.status(200).json({ ok: true });
   } catch (err) {
     console.log('[v0] send-reservation error:', err && err.message);
-    return res.status(500).json({
-      error: 'Failed to send reservation email.',
-      detail: err && err.message,
-      code: err && err.code,
-      responseCode: err && err.responseCode,
-    });
+    return res.status(500).json({ error: 'Failed to send reservation email.' });
   }
 };
