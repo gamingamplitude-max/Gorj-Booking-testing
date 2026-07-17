@@ -350,9 +350,122 @@ const IS_TOUCH = window.matchMedia('(hover: none) and (pointer: coarse)').matche
     });
   }
 
-  document.querySelectorAll('.tilt-3d').forEach(bindTilt);
+  // Destination cards are driven by the dedicated cinematic engine below
+  // (scroll-scrub + tilt in one lerp loop), so exclude them here.
+  document.querySelectorAll('.tilt-3d:not(.dest-card)').forEach(bindTilt);
   // expose for dynamically created cards
   window.__bindTilt = bindTilt;
+})();
+
+// ── 5b. DESTINATIONS CINEMATIC ENGINE ─────────────────────────────
+// Scroll-scrubs each destination card in 3D (position, rotation, Z-depth)
+// and layers live mouse tilt on the active card. Every value is lerped
+// toward its target in a single rAF loop for fluid, stutter-free motion.
+(function initDestinationsCinematic() {
+  if (IS_TOUCH || PREFERS_REDUCED_MOTION) return;
+
+  const grid = document.querySelector('.destinations-grid');
+  if (!grid) return;
+  const cards = Array.from(grid.querySelectorAll('.dest-card'));
+  if (!cards.length) return;
+
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+
+  cards.forEach((card, i) => {
+    const tiltMax = Number(card.dataset.tiltMax) || 9;
+    const layers = card.querySelectorAll('[data-tilt-layer]');
+    card.style.willChange = 'transform, opacity';
+    const state = {
+      tiltMax,
+      layers,
+      side: i % 2 === 0 ? 1 : -1,
+      // scrub (scroll-driven)
+      curY: 0, curZ: 0, curSRX: 0, curSRY: 0, curOp: 1,
+      // tilt (mouse-driven)
+      tX: 0, tY: 0, curTX: 0, curTY: 0,
+      primed: false,
+    };
+    card._cine = state;
+
+    card.addEventListener('mousemove', (e) => {
+      const rect = card.getBoundingClientRect();
+      const px = (e.clientX - rect.left) / rect.width;
+      const py = (e.clientY - rect.top) / rect.height;
+      state.tX = -(py - 0.5) * 2 * tiltMax;
+      state.tY = (px - 0.5) * 2 * tiltMax;
+      card.style.setProperty('--glare-x', (px * 100).toFixed(1) + '%');
+      card.style.setProperty('--glare-y', (py * 100).toFixed(1) + '%');
+    });
+    card.addEventListener('mouseleave', () => { state.tX = 0; state.tY = 0; });
+  });
+
+  let raf = null;
+  let active = false;
+
+  function frame() {
+    const vh = window.innerHeight;
+    for (const card of cards) {
+      const s = card._cine;
+      const rect = card.getBoundingClientRect();
+      const center = rect.top + rect.height / 2;
+
+      // Signed distance from viewport center, normalised (~ -1 .. 1)
+      const d = clamp((center - vh * 0.5) / vh, -1, 1);
+      // Entrance progress: 0 as the card enters from the bottom, 1 once risen
+      const p = clamp((vh - rect.top) / (vh * 0.55), 0, 1);
+
+      // Scroll-scrub targets
+      const targetY = d * 46;                       // vertical parallax drift
+      const targetZ = -Math.abs(d) * 190;           // depth: recedes off-center
+      const targetSRX = -d * 11;                     // pitch based on position
+      const targetSRY = s.side * Math.abs(d) * 6;    // subtle alternating yaw
+      const targetOp = Math.min(1, p * 1.25);
+
+      if (!s.primed) {
+        s.curY = targetY; s.curZ = targetZ;
+        s.curSRX = targetSRX; s.curSRY = targetSRY;
+        s.curOp = targetOp; s.primed = true;
+      }
+
+      // Interpolate everything (lerp) for buttery motion
+      s.curY = lerp(s.curY, targetY, 0.09);
+      s.curZ = lerp(s.curZ, targetZ, 0.09);
+      s.curSRX = lerp(s.curSRX, targetSRX, 0.10);
+      s.curSRY = lerp(s.curSRY, targetSRY, 0.10);
+      s.curOp = lerp(s.curOp, targetOp, 0.12);
+      s.curTX = lerp(s.curTX, s.tX, 0.14);
+      s.curTY = lerp(s.curTY, s.tY, 0.14);
+
+      const rx = s.curSRX + s.curTX;
+      const ry = s.curSRY + s.curTY;
+
+      card.style.transform =
+        `translate3d(0, ${s.curY.toFixed(2)}px, ${s.curZ.toFixed(2)}px) ` +
+        `rotateX(${rx.toFixed(3)}deg) rotateY(${ry.toFixed(3)}deg)`;
+      card.style.opacity = s.curOp.toFixed(3);
+
+      // Pop-out inner layers driven by the mouse-tilt component only
+      s.layers.forEach((layer) => {
+        const depth = Number(layer.dataset.tiltLayer) || 1;
+        layer.style.transform =
+          `translateZ(${depth * 20}px) ` +
+          `translateX(${(-s.curTY * depth * 0.55).toFixed(2)}px) ` +
+          `translateY(${(s.curTX * depth * 0.55).toFixed(2)}px)`;
+      });
+    }
+    if (active) raf = requestAnimationFrame(frame);
+    else raf = null;
+  }
+
+  function start() { if (!raf) { active = true; raf = requestAnimationFrame(frame); } }
+  function stop() { active = false; }
+
+  // Only animate while the section is in view (perf).
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => { entry.isIntersecting ? start() : stop(); });
+  }, { rootMargin: '200px 0px' });
+  io.observe(document.getElementById('destinations') || grid);
 })();
 
 // ── 6. HERO ANIMATION (called after loader) ───────────────────────
@@ -407,18 +520,8 @@ window.addEventListener('DOMContentLoaded', () => {
     );
   });
 
-  // Destination cards rise with 3D unfold
-  gsap.utils.toArray('.dest-card').forEach((card, i) => {
-    gsap.fromTo(card,
-      { opacity: 0, y: 70, rotationX: -10, transformPerspective: 1200 },
-      { opacity: 1, y: 0, rotationX: 0,
-        duration: 1,
-        delay: (i % 3) * 0.12,
-        ease: 'power3.out',
-        scrollTrigger: { trigger: card, start: 'top 88%', once: true },
-        clearProps: 'transform' }
-    );
-  });
+  // Destination cards are handled by the cinematic engine (§5b):
+  // scroll-scrubbed 3D position/rotation/depth + live mouse tilt, all lerped.
 
   gsap.utils.toArray('.accom-summary-card').forEach((card, i) => {
     gsap.fromTo(card,
