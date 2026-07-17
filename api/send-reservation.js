@@ -105,10 +105,15 @@ module.exports = async (req, res) => {
   const text = rows.map(([l, v]) => `${l}: ${v}`).join('\n');
 
   try {
+    // Gmail shows app passwords with spaces (e.g. "abcd efgh ijkl mnop").
+    // Those spaces are display-only and must be removed before auth.
+    const appPassword = String(GMAIL_APP_PASSWORD).replace(/\s+/g, '');
     const transporter = nodemailer.createTransport({
       service: 'gmail',
-      auth: { user: GMAIL_USER, pass: GMAIL_APP_PASSWORD },
+      auth: { user: String(GMAIL_USER).trim(), pass: appPassword },
     });
+
+    await transporter.verify();
 
     await transporter.sendMail({
       from: `"Gorj Booking" <${GMAIL_USER}>`,
@@ -123,6 +128,11 @@ module.exports = async (req, res) => {
     return res.status(200).json({ ok: true });
   } catch (err) {
     console.log('[v0] send-reservation error:', err && err.message);
-    return res.status(500).json({ error: 'Failed to send reservation email.' });
+    return res.status(500).json({
+      error: 'Failed to send reservation email.',
+      detail: err && err.message,
+      code: err && err.code,
+      responseCode: err && err.responseCode,
+    });
   }
 };
