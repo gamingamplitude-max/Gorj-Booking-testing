@@ -1100,6 +1100,10 @@ window.addEventListener('DOMContentLoaded', () => {
     try {
       await apiFetch('/api/bookings', { method: 'POST', body: JSON.stringify(bookingData) });
     } catch (e) { /* local-only mode */ }
+    // Send a confirmation email to the guest's address (best-effort)
+    try {
+      await apiFetch('/api/send-reservation', { method: 'POST', body: JSON.stringify(bookingData) });
+    } catch (e) { /* email service unavailable — do not block the booking */ }
     try {
       renderReservations(existing.filter(b => b.ownerToken === (token || null)));
     } catch (e) { /* ignore */ }
@@ -1469,7 +1473,9 @@ window.addEventListener('DOMContentLoaded', () => {
       lastName: document.getElementById('lname')?.value.trim(),
       email: bookingEmail?.value.trim(),
       accommodation: accomSelect?.value,
+      accommodationName: loc?.name || accomSelect?.value,
       roomType: roomTypeSelect?.value || null,
+      roomTypeName: room?.name || null,
       checkin: checkin?.value,
       checkout: checkout?.value,
       guests: guestsEl?.value,
